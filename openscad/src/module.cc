@@ -1,0 +1,316 @@
+/*
+ *  OpenSCAD (www.openscad.org)
+ *  Copyright (C) 2009-2011 Clifford Wolf <clifford@clifford.at> and
+ *                          Marius Kintel <marius@kintel.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  As a special exception, you have permission to link this program
+ *  with the CGAL library and distribute executables, as long as you
+ *  follow the requirements of the GNU GPL in regard to all of the
+ *  software in the executable aside from CGAL.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ */
+
+#include "module.h"
+#include "ModuleCache.h"
+#include "node.h"
+#include "modcontext.h"
+#include "evalcontext.h"
+#include "expression.h"
+#include "function.h"
+#include "printutils.h"
+#include "parsersettings.h"
+
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#include "boosty.h"
+#include <boost/foreach.hpp>
+#include <sstream>
+#include <sys/stat.h>
+
+AbstractModule::~AbstractModule()
+{
+}
+
+AbstractNode *AbstractModule::instantiate(const Context *ctx, const ModuleInstantiation *inst, const EvalContext *evalctx) const
+{
+	(void)ctx; // avoid unusued parameter warning
+
+	AbstractNode *node = new AbstractNode(inst);
+
+	node->children = inst->instantiateChildren(evalctx);
+
+	return node;
+}
+
+std::string AbstractModule::dump(const std::string &indent, const std::string &name) const
+{
+	std::stringstream dump;
+	dump << indent << "abstract module " << name << "();\n";
+	return dump.str();
+}
+
+ModuleInstantiation::~ModuleInstantiation()
+{
+	BOOST_FOREACH(const Assignment &arg, this->arguments) delete arg.second;
+}
+
+IfElseModuleInstantiation::~IfElseModuleInstantiation()
+{
+}
+
+/*!
+	Returns the absolute path to the given filename, unless it's empty.
+
+	NB! This will actually search for the file, to be backwards compatible with <= 2013.01
+	(see issue #217)
+*/
+std::string ModuleInstantiation::getAbsolutePath(const std::string &filename) const
+{
+	if (!filename.empty() && !boosty::is_absolute(fs::path(filename))) {
+		return boosty::absolute(fs::path(this->modpath) / filename).string();
+	}
+	else {
+		return filename;
+	}
+}
+
+std::string ModuleInstantiation::dump(const std::string &indent) const
+{
+	std::stringstream dump;
+	dump << indent;
+	dump << modname + "(";
+	for (size_t i=0; i < this->arguments.size(); i++) {
+		const Assignment &arg = this->arguments[i];
+		if (i > 0) dump << ", ";
+		if (!arg.first.empty()) dump << arg.first << " = ";
+		dump << *arg.second;
+	}
+	if (scope.numElements() == 0) {
+		dump << ");\n";
+	} else if (scope.numElements() == 1) {
+		dump << ") ";
+		dump << scope.dump("");
+	} else {
+		dump << ") {\n";
+		dump << scope.dump(indent + "\t");
+		dump << indent << "}\n";
+	}
+	return dump.str();
+}
+
+std::string IfElseModuleInstantiation::dump(const std::string &indent) const
+{
+	std::stringstream dump;
+	dump << ModuleInstantiation::dump(indent);
+	dump << indent;
+	if (else_scope.numElements() > 0) {
+		dump << indent << "else ";
+		if (else_scope.numElements() == 1) {
+			dump << else_scope.dump("");
+		}
+		else {
+			dump << "{\n";
+			dump << else_scope.dump(indent + "\t");
+			dump << indent << "}\n";
+		}
+	}
+	return dump.str();
+}
+
+AbstractNode *ModuleInstantiation::evaluate(const Context *ctx) const
+{
+	EvalContext c(ctx, this->arguments, &this->scope);
+
+#if 0 && DEBUG
+	PRINT("New eval ctx:");
+	c.dump(NULL, this);
+#endif
+	AbstractNode *node = ctx->instantiate_module(*this, &c); // Passes c as evalctx
+	return node;
+}
+
+std::vector<AbstractNode*> ModuleInstantiation::instantiateChildren(const Context *evalctx) const
+{
+	return this->scope.instantiateChildren(evalctx);
+}
+
+std::vector<AbstractNode*> IfElseModuleInstantiation::instantiateElseChildren(const Context *evalctx) const
+{
+	return this->else_scope.instantiateChildren(evalctx);
+}
+
+Module::~Module()
+{
+}
+
+class ModRecursionGuard
+{
+public:
+	ModRecursionGuard(const ModuleInstantiation &inst) : inst(inst) { 
+		inst.recursioncount++; 
+	}
+	~ModRecursionGuard() { 
+		inst.recursioncount--; 
+	}
+	bool recursion_detected() const { return (inst.recursioncount > 1000); }
+private:
+	const ModuleInstantiation &inst;
+};
+
+AbstractNode *Module::instantiate(const Context *ctx, const ModuleInstantiation *inst, const EvalContext *evalctx) const
+{
+	ModRecursionGuard g(*inst);
+	if (g.recursion_detected()) { 
+		PRINTB("ERROR: Recursion detected calling module '%s'", inst->name());
+		return NULL;
+	}
+
+	ModuleContext c(ctx, evalctx);
+	c.initializeModule(*this);
+	c.set_variable("$children", Value(double(inst->scope.children.size())));
+	// FIXME: Set document path to the path of the module
+#if 0 && DEBUG
+	c.dump(this, inst);
+#endif
+
+	AbstractNode *node = new AbstractNode(inst);
+	std::vector<AbstractNode *> instantiatednodes = this->scope.instantiateChildren(&c);
+	node->children.insert(node->children.end(), instantiatednodes.begin(), instantiatednodes.end());
+
+	return node;
+}
+
+std::string Module::dump(const std::string &indent, const std::string &name) const
+{
+	std::stringstream dump;
+	std::string tab;
+	if (!name.empty()) {
+		dump << indent << "module " << name << "(";
+		for (size_t i=0; i < this->definition_arguments.size(); i++) {
+			const Assignment &arg = this->definition_arguments[i];
+			if (i > 0) dump << ", ";
+			dump << arg.first;
+			if (arg.second) dump << " = " << *arg.second;
+		}
+		dump << ") {\n";
+		tab = "\t";
+	}
+	dump << scope.dump(indent + tab);
+	if (!name.empty()) {
+		dump << indent << "}\n";
+	}
+	return dump.str();
+}
+
+void FileModule::registerInclude(const std::string &localpath,
+																 const std::string &fullpath)
+{
+	struct stat st;
+	memset(&st, 0, sizeof(struct stat));
+	bool valid = stat(fullpath.c_str(), &st) == 0;
+	IncludeFile inc = {fullpath, valid, st.st_mtime};
+	this->includes[localpath] = inc;
+}
+
+bool FileModule::includesChanged() const
+{
+	BOOST_FOREACH(const FileModule::IncludeContainer::value_type &item, this->includes) {
+		if (include_modified(item.second)) return true;
+	}
+	return false;
+}
+
+bool FileModule::include_modified(const IncludeFile &inc) const
+{
+	struct stat st;
+	memset(&st, 0, sizeof(struct stat));
+
+	fs::path fullpath = find_valid_path(this->path, inc.filename);
+	bool valid = !fullpath.empty() ? (stat(boosty::stringy(fullpath).c_str(), &st) == 0) : false;
+	
+	if (valid && !inc.valid) return true; // Detect appearance of file but not removal
+	if (valid && st.st_mtime > inc.mtime) return true;
+	
+	return false;
+}
+
+/*!
+	Check if any dependencies have been modified and recompile them.
+	Returns true if anything was recompiled.
+*/
+bool FileModule::handleDependencies()
+{
+	if (this->is_handling_dependencies) return false;
+	this->is_handling_dependencies = true;
+
+	bool changed = false;
+
+	// If a lib in usedlibs was previously missing, we need to relocate it
+	// by searching the applicable paths. We can identify a previously missing module
+	// as it will have a relative path.
+
+	// Iterating manually since we want to modify the container while iterating
+	FileModule::ModuleContainer::iterator iter = this->usedlibs.begin();
+	while (iter != this->usedlibs.end()) {
+		FileModule::ModuleContainer::iterator curr = iter++;
+
+		bool wasmissing = false;
+		// Get an absolute filename for the module
+		std::string filename = *curr;
+		if (!boosty::is_absolute(filename)) {
+			wasmissing = true;
+			fs::path fullpath = find_valid_path(this->path, filename);
+			if (!fullpath.empty()) filename = boosty::stringy(fullpath);
+		}
+
+		FileModule *oldmodule = ModuleCache::instance()->lookup(filename);
+		FileModule *newmodule = ModuleCache::instance()->evaluate(filename);
+		// Detect appearance but not removal of files
+		if (newmodule && oldmodule != newmodule) {
+			changed = true;
+#ifdef DEBUG
+			PRINTB_NOCACHE("  %s: %p -> %p", filename % oldmodule % newmodule);
+#endif
+		}
+		if (!newmodule) {
+			// Only print warning if we're not part of an automatic reload
+			if (!oldmodule && !wasmissing) {
+				PRINTB_NOCACHE("WARNING: Failed to compile library '%s'.", filename);
+			}
+		}
+	}
+
+	this->is_handling_dependencies = false;
+	return changed;
+}
+
+AbstractNode *FileModule::instantiate(const Context *ctx, const ModuleInstantiation *inst, const EvalContext *evalctx) const
+{
+	assert(evalctx == NULL);
+	FileContext c(*this, ctx);
+	c.initializeModule(*this);
+	// FIXME: Set document path to the path of the module
+#if 0 && DEBUG
+	c.dump(this, inst);
+#endif
+
+	AbstractNode *node = new AbstractNode(inst);
+	std::vector<AbstractNode *> instantiatednodes = this->scope.instantiateChildren(ctx, &c);
+	node->children.insert(node->children.end(), instantiatednodes.begin(), instantiatednodes.end());
+
+	return node;
+}

@@ -1,0 +1,140 @@
+Running regression tests:
+-------------------------
+
+Prerequisites: cmake, python, ImageMagick 6.5.9.3 or newer
+
+First, get a working qmake GUI build. It is used by the tests.
+Next, get MCAD installed by using 'git submodule update --init'
+
+A) Building test environment
+
+Linux, Mac:
+$ cd tests
+$ cmake .
+$ make
+
+Windows + MSVC:
+
+From the QT command prompt:
+
+> cd tests
+> cmake . -DCMAKE_BUILD_TYPE=Release
+> sed -i s/\/MD/\/MT/ CMakeCache.txt
+> cmake .
+> nmake -f Makefile
+
+Cross compiling Linux->Win32:
+
+Please see openscad/tests/CMingw-cross-env.cmake for instructions.
+
+B) Running tests
+
+$ ctest               Runs tests enabled by default
+$ ctest -R <regex>    Runs only matching tests, e.g. ctest -R dxf
+$ ctest -C <configs>  Adds extended tests belonging to configs.
+                      Valid configs:
+                      Default  - Run default tests
+                      Heavy    - Run more time consuming tests (> ~10 seconds)
+                      Examples - test all examples
+                      All      - test everything
+
+Adding a new regression test:
+------------------------------
+
+1) create a test file at an appropriate location under testdata/
+2) if the test is non-obvious, create a human readable description as comments in the test (or in another file in the same directory in case the file isn't human readable)
+3) if a new test app was written, this must be added to tests/CMakeLists.txt
+4) Add the tests to the test apps for which you want them to run (in tests/CMakeLists.txt)
+5) run the test with the environment variable TEST_GENERATE=1, e.g.:
+   $ TEST_GENERATE=1 ctest -R mytest
+   (this will generate a mytest-expected.txt file which is used for regression testing)
+6) manually verify that the output is correct (tests/regression/<testapp>/mytest-expected.<suffix>)
+7) run the test normally and verify that it passes:
+  $ ctest -R mytest
+
+Adding a new example:
+---------------------
+
+This is almost the same as adding a new regression test:
+1) Create the example under examples/
+2) run the test with the environment variable TEST_GENERATE=1, e.g.:
+   $ TEST_GENERATE=1 ctest -C Examples -R exampleNNN
+   (this will generate a exampleNNN-expected.txt file which is used for regression testing)
+3) manually verify that the output is correct (tests/regression/<testapp>/exampleNNN.<suffix>)
+4) run the test normally and verify that it passes:
+  $ ctest -C Examples -R exampleNNN
+
+
+
+Troubleshooting:
+------------------------------
+
+0. Headless unix servers
+
+If you are attempting to run the tests on a unix-like system but only
+have shell-console access, you may be able to run the tests by using a 
+virtual framebuffer program like Xvnc or Xvfb. For example:
+
+$ Xvfb :5 -screen 0 800x600x24 &
+$ DISPLAY=:5 ctest
+
+or
+
+$ xvfb-run ctest
+
+Some versions of Xvfb may fail, however. 
+
+1. Trouble finding libraries on unix
+
+ To help CMAKE find eigen, OpenCSG, CGAL, Boost, and GLEW, you can use 
+ environment variables, just like for the main qmake & openscad.pro. Examples:
+
+ OPENSCAD_LIBRARIES=$HOME cmake .
+ CGALDIR=$HOME/CGAL-3.9 BOOSTDIR=$HOME/boost-1.47.0 cmake .
+ 
+ Valid variables are as follows:
+
+ BOOSTDIR, CGALDIR, EIGENDIR, GLEWDIR, OPENCSGDIR, OPENSCAD_LIBRARIES
+
+ When running, this might help find your locally built libraries (assuming
+ you installed into $HOME)
+
+ Linux: export LD_LIBRARY_PATH=$HOME/lib:$HOME/lib64
+ Mac: export DYLD_LIBRARY_PATH=$HOME/lib
+
+2. Location of logs
+ 
+Logs of test runs are found in tests/build/Testing/Temporary
+A pretty-printed index.html is in a subdir of tests/build/Testing/Temporary
+Expected results are found in tests/regression/*
+Actual results are found in tests/build/testname-output/*
+
+3. Image-based tests takes a long time, they fail, and the log says 'return -11'
+
+Imagemagick may have crashed while comparing the expected images to the 
+test-run generated (actual) images. You can try using the alternate 
+ImageMagick comparison method by by erasing CMakeCache, and re-running 
+cmake with -DCOMPARATOR=ncc. This will enable the Normalized Cross 
+Comparison method.
+
+4. Testing images fails with 'morphology not found" for ImageMagick in the log
+
+Your version of imagemagick is old. Upgrade, or pass -DCOMPARATOR=old to 
+cmake. The comparison will be of lowered reliability.
+
+5. Locale errors
+
+"terminate called after throwing an instance of 'std::runtime_error'
+  what():  locale::facet::_S_create_c_locale name not valid" 
+
+Is a boost/libstdc++ bug. Fix like so:
+
+  $ export LC_MESSAGES=
+
+6. Other issues
+
+The OpenSCAD User Manual has a section on buildling. Please check there 
+for updates:
+
+http://en.wikibooks.org/wiki/OpenSCAD_User_Manual
+
