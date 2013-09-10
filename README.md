@@ -18,6 +18,9 @@ instructions to build:
 download src from this https://www.dropbox.com/sh/8ure355m046gxyl/RBFaPs98oC
 put in Procrustes/libraries/src
 
+3. You will also need to download the patched meshlab server found here:
+http://www.andrewhazelden.com/blog/2012/04/automate-your-meshlab-workflow-with-mlx-filter-scripts/
+put that folder in Procrustes/libraries/
 
 Then after you've cloned this git repository, run the script that sets up the environment variables.
 
