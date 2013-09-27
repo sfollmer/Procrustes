@@ -2617,20 +2617,33 @@ void MainWindow::insertionButtonAction(){
     PRINT("Output rotate.mlx");
     clearCurrentOutput();
     
+    QDir dir = QDir::current();
+    QString dirFileName = dir.absolutePath();
+    
+    setCurrentOutput();
+    PRINT(dirFileName.toStdString());
+    clearCurrentOutput();
+    
     // Runmeshlab script to rotate target mesh
     std::stringstream command;
-    command << "/Applications/meshlabPatched.app/Contents/MacOS/meshlabserver -i " << targetFileName.toStdString() <<" -o rotatedMesh.stl -s rotate.mlx";
+    //command << "/Applications/meshlabPatched.app/Contents/MacOS/meshlabserver -i " << targetFileName.toStdString() <<" -o rotatedMesh.stl -s rotate.mlx";
+    command << dirFileName.toStdString() << "/../libraries/MeshLabMac_v132patched/meshlab.app/Contents/MacOS/meshlabserver -i " << targetFileName.toStdString() <<" -o rotatedMesh.stl -s rotate.mlx";
     
     const std::string tmp = command.str();
     const char* cstr = tmp.c_str();
     
     int rv = system(cstr);
     
+    setCurrentOutput();
+    PRINT(tmp);
+    clearCurrentOutput();
+    
     // run binvox on rotated mesh to voxelize
     
     std::stringstream binVoxCommand;
-    binVoxCommand<< "/Users/follmer/Desktop/Voxel/binvox  64 -c rotatedMesh.stl ";
-    
+    //binVoxCommand<< "/Users/follmer/Desktop/Voxel/binvox  64 -c rotatedMesh.stl ";
+    binVoxCommand<< dirFileName.toStdString() << "/../libraries/binvox/binvox  64 -c rotatedMesh.stl ";
+
     const std::string tmp2 = binVoxCommand.str();
     const char* cstr2 = tmp2.c_str();
     
@@ -2643,7 +2656,8 @@ void MainWindow::insertionButtonAction(){
     
     // run marchingCubes code to extrude part
     std::stringstream marchCommand;
-    marchCommand<< "/Users/follmer/Library/Developer/Xcode/DerivedData/glutMarch-dzjxobmlwtluttgyfdxwuivouinc/Build/Products/Debug/glutMarch rotatedMesh.binvox";
+    //marchCommand<< "/Users/follmer/Library/Developer/Xcode/DerivedData/glutMarch-dzjxobmlwtluttgyfdxwuivouinc/Build/Products/Debug/glutMarch rotatedMesh.binvox";
+    marchCommand<< dirFileName.toStdString() << "/../glutMarch/Product/glutMarch rotatedMesh.binvox";
     
     const std::string tmp3 = marchCommand.str();
     const char* cstr3 = tmp3.c_str();
