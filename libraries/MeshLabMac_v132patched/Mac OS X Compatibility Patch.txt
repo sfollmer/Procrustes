@@ -1,0 +1,70 @@
+Mac OS X Compatibility Patch - May 8, 2013
+-------------------------------------------
+
+The standard Mac OS X version of Meshlab v132 on source forge has a QT framework linking issue. 
+
+I created a patched version of the meshlab binaries that update the QT framework @executable_path values. This new Mac OS X version allows you to use meshlabserver from the command line without issues.
+
+
+Cheers,
+Andrew Hazelden
+andrew@andrewhazelden.com
+
+-------------------------------------------
+
+For the technically inquisitive, the changes are:
+
+The current Mac OS X version of meshlabserver that comes bundled with Meshlab v132 has a QT framework linking issue. When to try to launch meshlab with the default meshlabserver binary you will typically get the following error :
+
+    bash-3.2$ /Applications/meshlab.app/Contents/MacOS/meshlabserver
+    dyld: Library not loaded: QtScript.framework/Versions/4/QtScript
+    Referenced from: /Applications/meshlab.app/Contents/MacOS/meshlabserver
+    Reason: image not found
+    Trace/BPT trap
+
+If you are curious about the problem you can use the otool -L command to find out where the frameworks were linked:
+otool -L /Applications/meshlab.app/Contents/MacOS/meshlabserver
+1
+	
+otool -L /Applications/meshlab.app/Contents/MacOS/meshlabserver
+
+When you run otool -L on the meshlabserver executable you will see the following in your terminal:
+
+    mac-pro:~ dsi$ otool -L /Users/dsi/Desktop/meshlab.app/Contents/MacOS/meshlabserver
+    /Users/dsi/Desktop/meshlab.app/Contents/MacOS/meshlabserver:
+    @executable_path/libcommon.1.dylib (compatibility version 1.0.0, current version 1.0.0)
+    /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtScript.framework/Versions/4/QtScript (compatibility version 4.8.0, current version 4.8.1)
+    /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtCore.framework/Versions/4/QtCore (compatibility version 4.8.0, current version 4.8.1)
+    /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtXmlPatterns.framework/Versions/4/QtXmlPatterns (compatibility version 4.8.0, current version 4.8.1)
+    /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtNetwork.framework/Versions/4/QtNetwork (compatibility version 4.8.0, current version 4.8.1)
+    /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtXml.framework/Versions/4/QtXml (compatibility version 4.8.0, current version 4.8.1)
+    /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtOpenGL.framework/Versions/4/QtOpenGL (compatibility version 4.8.0, current version 4.8.1)
+    /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtGui.framework/Versions/4/QtGui (compatibility version 4.8.0, current version 4.8.1)
+    /System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL (compatibility version 1.0.0, current version 1.0.0)
+    /System/Library/Frameworks/AGL.framework/Versions/A/AGL (compatibility version 1.0.0, current version 1.0.0)
+    /usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 52.0.0)
+    /usr/lib/libgcc_s.1.dylib (compatibility version 1.0.0, current version 1094.0.0)
+    /usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 159.1.0)
+
+
+This shows us the QT frameworks are linked to the wrong location. For example the QtScript.framework is currently linked to:
+
+    Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtScript.framework/Versions/4/QtScript
+
+
+The correct path should be:
+
+    @executable_path/../Frameworks/QtScript.framework/Versions/4/QtScript
+
+If you have the Apple Xcode developer tools installed you can fix the meshlabserver framework linking issues by running the install_name_tool on the meshlabserver program from the command line:
+install_name_tool -change /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtScript.framework/Versions/4/QtScript @executable_path/../Frameworks/QtScript.framework/Versions/4/QtScript /Applications/meshlab.app/Contents/MacOS/meshlabserver 
+install_name_tool -change /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtCore.framework/Versions/4/QtCore @executable_path/../Frameworks/QtCore.framework/Versions/4/QtCore /Applications/meshlab.app/Contents/MacOS/meshlabserver 
+install_name_tool -change /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtXmlPatterns.framework/Versions/4/QtXmlPatterns @executable_path/../Frameworks/QtXmlPatterns.framework/Versions/4/QtXmlPatterns /Applications/meshlab.app/Contents/MacOS/meshlabserver 
+install_name_tool -change /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtNetwork.framework/Versions/4/QtNetwork @executable_path/../Frameworks/QtNetwork.framework/Versions/4/QtNetwork /Applications/meshlab.app/Contents/MacOS/meshlabserver 
+install_name_tool -change /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtXml.framework/Versions/4/QtXml @executable_path/../Frameworks/QtXml.framework/Versions/4/QtXml /Applications/meshlab.app/Contents/MacOS/meshlabserver 
+install_name_tool -change /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtOpenGL.framework/Versions/4/QtOpenGL @executable_path/../Frameworks/QtOpenGL.framework/Versions/4/QtOpenGL /Applications/meshlab.app/Contents/MacOS/meshlabserver 
+install_name_tool -change /Users/robertoscopigno/QtSDK/Desktop/Qt/4.8.1/gcc/lib/QtGui.framework/Versions/4/QtGui @executable_path/../Frameworks/QtGui.framework/Versions/4/QtGui /Applications/meshlab.app/Contents/MacOS/meshlabserver
+
+With the fix applied you can now run meshlabserver from the current working directory:
+/Applications/meshlab.app/Contents/MacOS/meshlabserver -i ~/Desktop/option-0000.ply -o ~/Desktop/normals.ply -s ~/Desktop/PLYmesher/scripts/compute_normals_script.mlx -om vc vn
+
