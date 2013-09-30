@@ -2,3 +2,5 @@ libraries/
 *.DS_Store
 openscad/Makefile
 openscad/OpenSCAD.app/Contents/MacOS/OpenSCAD
+openscad/triangles.obj
+openscad/rotate.mlx
