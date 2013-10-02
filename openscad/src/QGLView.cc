@@ -209,6 +209,8 @@ void QGLView::normalizeAngle(GLdouble& angle)
 
 void QGLView::mouseMoveEvent(QMouseEvent *event)
 {
+  // TODO valkyrie : can we get doubles/floats from this?
+  // Looks like no...
   QPoint this_mouse = event->globalPos();
   double dx = (this_mouse.x()-last_mouse.x()) * 0.7;
   double dy = (this_mouse.y()-last_mouse.y()) * 0.7;
@@ -217,30 +219,29 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
 #ifdef Q_WS_MAC
         && !(event->modifiers() & Qt::MetaModifier)
 #endif
-      ) {
-        
-        if ((QApplication::keyboardModifiers() & Qt::AltModifier) != 0) {
-             drawnPoints.push_back(QPoint(event->pos().x(),event->pos().y()));
-            
-        }
-        else if ((QApplication::keyboardModifiers() & Qt::ControlModifier) !=0){
-            drawnInsertionPoints.push_back(QPoint(event->pos().x(),event->pos().y()));
-            
-        }
-        else {
-                    // Left button rotates in xz, Shift-left rotates in xy
-      // On Mac, Ctrl-Left is handled as right button on other platforms
-      cam.object_rot.x() += dy;
-      if ((QApplication::keyboardModifiers() & Qt::ShiftModifier) != 0)
-        cam.object_rot.y() += dx;
-      else
-        cam.object_rot.z() += dx;
+       ) {
 
-      normalizeAngle(cam.object_rot.x());
-      normalizeAngle(cam.object_rot.y());
-      normalizeAngle(cam.object_rot.z());
-        }
-       
+      if ((QApplication::keyboardModifiers() & Qt::AltModifier) != 0) {
+        drawnPoints.push_back(this_mouse);
+
+      }
+      else if ((QApplication::keyboardModifiers() & Qt::ControlModifier) !=0){
+        drawnInsertionPoints.push_back(this_mouse);
+      }
+      else {
+        // Left button rotates in xz, Shift-left rotates in xy
+        // On Mac, Ctrl-Left is handled as right button on other platforms
+        cam.object_rot.x() += dy;
+        if ((QApplication::keyboardModifiers() & Qt::ShiftModifier) != 0)
+          cam.object_rot.y() += dx;
+        else
+          cam.object_rot.z() += dx;
+
+        normalizeAngle(cam.object_rot.x());
+        normalizeAngle(cam.object_rot.y());
+        normalizeAngle(cam.object_rot.z());
+      }
+
     } else {
       // Right button pans in the xz plane
       // Middle button pans in the xy plane
@@ -249,27 +250,27 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
         cam.viewer_distance += (GLdouble)dy;
       } else {
 
-      double mx = +(dx) * cam.viewer_distance/1000;
-      double mz = -(dy) * cam.viewer_distance/1000;
+        double mx = +(dx) * cam.viewer_distance/1000;
+        double mz = -(dy) * cam.viewer_distance/1000;
 
-      double my = 0;
+        double my = 0;
 #if (QT_VERSION < QT_VERSION_CHECK(4, 7, 0))
-      if (event->buttons() & Qt::MidButton) {
+        if (event->buttons() & Qt::MidButton) {
 #else
-      if (event->buttons() & Qt::MiddleButton) {
+          if (event->buttons() & Qt::MiddleButton) {
 #endif
-        my = mz;
-        mz = 0;
-        // actually lock the x-position
-        // (turns out to be easier to use than xy panning)
-        mx = 0;
-      }
+            my = mz;
+            mz = 0;
+            // actually lock the x-position
+            // (turns out to be easier to use than xy panning)
+            mx = 0;
+          }
 
-      Matrix3d aax, aay, aaz, tm3;
-      aax = Eigen::AngleAxisd(-(cam.object_rot.x()/180) * M_PI, Vector3d::UnitX());
-      aay = Eigen::AngleAxisd(-(cam.object_rot.y()/180) * M_PI, Vector3d::UnitY());
-      aaz = Eigen::AngleAxisd(-(cam.object_rot.z()/180) * M_PI, Vector3d::UnitZ());
-      tm3 = Matrix3d::Identity();
+          Matrix3d aax, aay, aaz, tm3;
+          aax = Eigen::AngleAxisd(-(cam.object_rot.x()/180) * M_PI, Vector3d::UnitX());
+          aay = Eigen::AngleAxisd(-(cam.object_rot.y()/180) * M_PI, Vector3d::UnitY());
+          aaz = Eigen::AngleAxisd(-(cam.object_rot.z()/180) * M_PI, Vector3d::UnitZ());
+          tm3 = Matrix3d::Identity();
       tm3 = aaz * (aay * (aax * tm3));
 
       Matrix4d tm;
@@ -320,7 +321,6 @@ bool QGLView::save(const char *filename)
   return img.save(filename, "PNG");
 }
     
-//still need to account for vertical line
 void QGLView::lineRegression(){
     if(drawnPoints.size()>0){
     int sum_x =0;
@@ -335,6 +335,8 @@ void QGLView::lineRegression(){
         sum_x2 += drawnPoints[i].x() * drawnPoints[i].x();
     }
     
+    /*
+     * Old Sean stuff
     double mean_x = sum_x / drawnPoints.size();
     double mean_y = sum_y / drawnPoints.size();
     
@@ -346,8 +348,11 @@ void QGLView::lineRegression(){
     slopeY = cov;
     slopeX = varx;
     
-    slope = cov / varx;
-    offset = mean_y - slope * mean_x;
+    //slope = cov / varx;
+    //offset = mean_y - slope * mean_x;*/
+    // from http://www.statisticshowto.com/articles/how-to-find-a-linear-regression-equation/
+    slope = (drawnPoints.size()*sum_xy - sum_x*sum_y)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
+    offset = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
     }
 }
    
