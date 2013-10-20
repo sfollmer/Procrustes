@@ -323,36 +323,36 @@ bool QGLView::save(const char *filename)
     
 void QGLView::lineRegression(){
     if(drawnPoints.size()>0){
-    int sum_x =0;
-    int sum_y =0;
-    int sum_xy = 0;
-    int sum_x2 = 0;
-    
-    for(int i = 0; i < drawnPoints.size(); i++){
+      int sum_x =0;
+      int sum_y =0;
+      int sum_xy = 0;
+      int sum_x2 = 0;
+
+      for(int i = 0; i < drawnPoints.size(); i++){
         sum_x += drawnPoints[i].x();
         sum_y += drawnPoints[i].y();
         sum_xy += drawnPoints[i].x() * drawnPoints[i].y();
         sum_x2 += drawnPoints[i].x() * drawnPoints[i].x();
-    }
-    
-    /*
-     * Old Sean stuff
-    double mean_x = sum_x / drawnPoints.size();
-    double mean_y = sum_y / drawnPoints.size();
-    
-    float varx = sum_x2 - sum_x * mean_x;
-    float cov = sum_xy - sum_x * mean_y;
-    
-    if(varx==0) varx = 0.00001;
-    
-    slopeY = cov;
-    slopeX = varx;
-    
-    //slope = cov / varx;
-    //offset = mean_y - slope * mean_x;*/
-    // from http://www.statisticshowto.com/articles/how-to-find-a-linear-regression-equation/
-    slope = (drawnPoints.size()*sum_xy - sum_x*sum_y)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
-    offset = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
+      }
+
+      /*
+       * Old Sean stuff
+       double mean_x = sum_x / drawnPoints.size();
+       double mean_y = sum_y / drawnPoints.size();
+
+       float varx = sum_x2 - sum_x * mean_x;
+       float cov = sum_xy - sum_x * mean_y;
+
+       if(varx==0) varx = 0.00001;
+
+       slopeY = cov;
+       slopeX = varx;
+
+      //slope = cov / varx;
+      //offset = mean_y - slope * mean_x;*/
+      // from http://www.statisticshowto.com/articles/how-to-find-a-linear-regression-equation/
+      slope = (drawnPoints.size()*sum_xy - sum_x*sum_y)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
+      offset = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
     }
 }
    
@@ -390,6 +390,7 @@ void QGLView::lineRegressionWorldSpace(){
             sum_x2 += drawnPointsWorld[i].x() * drawnPointsWorld[i].x();
         }
         
+        //Old Sean stuff
         double mean_x = sum_x / drawnPointsWorld.size();
         double mean_y = sum_y / drawnPointsWorld.size();
         
@@ -403,7 +404,10 @@ void QGLView::lineRegressionWorldSpace(){
         
         slopeWorld = cov / varx;
         offsetWorld = mean_y - slopeWorld * mean_x;
-        
+   
+        //thanks, statisticshowto.com!
+        slopeWorld = (drawnPointsWorld.size()*sum_xy - sum_x*sum_y)/(drawnPointsWorld.size()*sum_x2 - sum_x*sum_x);
+        offsetWorld = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPointsWorld.size()*sum_x2 - sum_x*sum_x);        
 }
 
 double QGLView::distanceToLine(){
@@ -420,7 +424,7 @@ double QGLView::distanceToLine(){
 }
 
     
-    
+//This function takes a point (x, y) in screen space and returns a point in opengl scene space    
 QPoint QGLView::GetOGLPos(int x, int y)
 {
     
@@ -448,7 +452,7 @@ QPoint QGLView::GetOGLPos(int x, int y)
         glReadPixels( x, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
         
         gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-        
+        // return floating point location as opposed to int
         return QPoint(posX, posZ);
 }
 
