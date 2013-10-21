@@ -47,7 +47,7 @@ public:
 public:
 	QLabel *statusLabel;
     QVector<QPoint> drawnPoints;
-    QVector<QPoint> drawnPointsWorld;
+    QVector<QPointF> drawnPointsWorld;
     QVector<QPoint> drawnInsertionPoints;
     QVector<QVector3D> drawnInsertionPointsWorld;
     float slope;
@@ -60,7 +60,7 @@ public:
     float slopeXWorld;
     float offsetWorld;
     
-    QPoint GetOGLPos(int x, int y);
+    QPointF GetOGLPos(int x, int y);
     QVector3D GetOGLPos3D(int x, int y);
     void pointsToWorldSpace();
     void lineRegressionWorldSpace();

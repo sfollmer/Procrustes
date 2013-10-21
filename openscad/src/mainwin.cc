@@ -2471,9 +2471,9 @@ void MainWindow::cuttingPlaneAction()
     setCurrentOutput();
     for(int i=0; i < maxPoints; i++){
         
-        PRINTB("x loc %d", this->qglview->drawnPoints[i].x());
+        PRINTB("x loc %f", this->qglview->drawnPoints[i].x());
     }
-    QPoint point2 = this->qglview->GetOGLPos(this->qglview->drawnPoints[maxPoints-1].x(),this->qglview->drawnPoints[maxPoints-1].y());
+    QPointF point2 = this->qglview->GetOGLPos(this->qglview->drawnPoints[maxPoints-1].x(),this->qglview->drawnPoints[maxPoints-1].y());
     
     PRINTB("x loc world %d", point2.x());
     PRINTB("y loc world %d", point2.y());

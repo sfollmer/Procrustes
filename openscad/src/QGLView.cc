@@ -379,10 +379,10 @@ QVector<QVector3D> QGLView::pointsToWorldSpace3D(QVector<QPoint> points){
 void QGLView::lineRegressionWorldSpace(){
     
         pointsToWorldSpace();
-        int sum_x =0;
-        int sum_y =0;
-        int sum_xy = 0;
-        int sum_x2 = 0;
+        float sum_x = 0.0;
+        float sum_y = 0.0;
+        float sum_xy = 0.0;
+        float sum_x2 = 0.0;
         
         for(int i = 0; i < drawnPointsWorld.size(); i++){
             sum_x += drawnPointsWorld[i].x();
@@ -391,8 +391,8 @@ void QGLView::lineRegressionWorldSpace(){
             sum_x2 += drawnPointsWorld[i].x() * drawnPointsWorld[i].x();
         }
         
-        double mean_x = 1.0 * sum_x / drawnPointsWorld.size();
-        double mean_y = 1.0 * sum_y / drawnPointsWorld.size();
+        float mean_x = 1.0 * sum_x / drawnPointsWorld.size();
+        float mean_y = 1.0 * sum_y / drawnPointsWorld.size();
         
         float varx = sum_x2 - sum_x * mean_x;
         float cov = sum_xy - sum_x * mean_y;
@@ -428,7 +428,7 @@ double QGLView::distanceToLine(){
 
     
 //This function takes a point (x, y) in screen space and returns a point in opengl scene space    
-QPoint QGLView::GetOGLPos(int x, int y)
+QPointF QGLView::GetOGLPos(int x, int y)
 {
     
     glMatrixMode(GL_PROJECTION);
@@ -455,8 +455,8 @@ QPoint QGLView::GetOGLPos(int x, int y)
         glReadPixels( x, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
         
         gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-        // return floating point location as opposed to int
-        return QPoint(posX, posZ);
+        // TODO return floating point location as opposed to int
+        return QPointF(posX, posZ);
 }
 
     
