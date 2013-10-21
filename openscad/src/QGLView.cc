@@ -218,7 +218,7 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
         && !(event->modifiers() & Qt::MetaModifier)
 #endif
       ) {
-        
+        //Todo change so that not using qpoint
         if ((QApplication::keyboardModifiers() & Qt::AltModifier) != 0) {
              drawnPoints.push_back(QPoint(event->pos().x(),event->pos().y()));
             

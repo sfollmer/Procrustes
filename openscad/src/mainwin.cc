@@ -2473,8 +2473,8 @@ void MainWindow::cuttingPlaneAction()
     }
     QPoint point2 = this->qglview->GetOGLPos(this->qglview->drawnPoints[maxPoints-1].x(),this->qglview->drawnPoints[maxPoints-1].y());
     
-    PRINTB("x loc world %d", point2.x());
-    PRINTB("y loc world %d", point2.y());
+    //PRINTB("x loc world %d", point2.x());
+    //PRINTB("y loc world %d", point2.y());
     
     clearCurrentOutput();
     
