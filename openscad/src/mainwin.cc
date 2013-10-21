@@ -2498,7 +2498,6 @@ void MainWindow::insertionDirectionAction(){
 }
 
 void MainWindow::targetButtonOpenAction(){
-    
     targetFileName = QFileDialog::getOpenFileName(this, tr("Open File"),"",tr("Files (*.*)"));
     const std::string file = targetFileName.toStdString();
     setCurrentOutput();
@@ -2545,10 +2544,8 @@ void MainWindow::insertionButtonAction(){
     PRINTB("zRot %f", zRot);
     clearCurrentOutput();
     
-    
     std::ofstream *out = new std::ofstream("rotate.mlx");
     if(!out->good()) {
-        
         exit(1);
     }
     
@@ -2595,8 +2592,6 @@ void MainWindow::insertionButtonAction(){
     *out << "</filter>" << std::endl;
     
     
-   
-    
     *out << "<filter name=\"Transform: Rotate\">" << std::endl;
     *out << "<Param enum_val0=\"X axis\" enum_val1=\"Y axis\" enum_cardinality=\"4\" enum_val2=\"Z axis\" enum_val3=\"custom axis\" type=\"RichEnum\" value=\"1\" name=\"rotAxis\"/>" << std::endl;
     *out << "<Param enum_val0=\"origin\" enum_val1=\"barycenter\" enum_cardinality=\"3\" enum_val2=\"custom point\" type=\"RichEnum\" value=\"0\" name=\"rotCenter\"/>" << std::endl;
@@ -2638,17 +2633,22 @@ void MainWindow::insertionButtonAction(){
     PRINT(tmp);
     clearCurrentOutput();
     
+    // remove previous binvox file
+
+    if(std::remove("rotatedMesh.binvox") != 0)
+      std::perror("No previous output to clear");
+    else
+      std::puts("Cleared previous output");
+
     // run binvox on rotated mesh to voxelize
     
     std::stringstream binVoxCommand;
-    //binVoxCommand<< "/Users/follmer/Desktop/Voxel/binvox  64 -c rotatedMesh.stl ";
     binVoxCommand<< dirFileName.toStdString() << "/../libraries/binvox/binvox  64 -c rotatedMesh.stl ";
 
     const std::string tmp2 = binVoxCommand.str();
     const char* cstr2 = tmp2.c_str();
     
     int rv2 = system(cstr2);
-    
     
     //parse binvox file for scale and translate values
     const std::string binFileName = "rotatedMesh.binvox";
@@ -3033,12 +3033,6 @@ void MainWindow::crossSection(){
     crossSectionMode = true;
     
     crossSectionModel(targetFileName.toStdString());
-    
-    
-    
-     
-    
-    
 }
 
 void MainWindow::crossSectionOutLines(){
