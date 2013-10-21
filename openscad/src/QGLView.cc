@@ -334,8 +334,8 @@ void QGLView::lineRegression(){
         sum_x2 += drawnPoints[i].x() * drawnPoints[i].x();
       }
 
-       double mean_x = sum_x / drawnPoints.size();
-       double mean_y = sum_y / drawnPoints.size();
+       double mean_x = 1.0 * sum_x / drawnPoints.size();
+       double mean_y = 1.0 * sum_y / drawnPoints.size();
 
        float varx = sum_x2 - sum_x * mean_x;
        float cov = sum_xy - sum_x * mean_y;
@@ -345,11 +345,15 @@ void QGLView::lineRegression(){
        slopeY = cov;
        slopeX = varx;
 
-      //slope = cov / varx;
-      //offset = mean_y - slope * mean_x;
-      // from http://www.statisticshowto.com/articles/how-to-find-a-linear-regression-equation/
-      slope = (drawnPoints.size()*sum_xy - sum_x*sum_y)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
-      offset = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
+      slope = cov / varx;
+      offset = mean_y - slope * mean_x;
+			
+			if(slope == 0) {
+				// in this case, we need to use an alternate formulation of the linear regression
+				// from http://www.statisticshowto.com/articles/how-to-find-a-linear-regression-equation/
+				slope = (drawnPoints.size()*sum_xy - sum_x*sum_y)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
+				offset = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPoints.size()*sum_x2 - sum_x*sum_x);
+			}
     }
 }
    
@@ -387,8 +391,8 @@ void QGLView::lineRegressionWorldSpace(){
             sum_x2 += drawnPointsWorld[i].x() * drawnPointsWorld[i].x();
         }
         
-        double mean_x = sum_x / drawnPointsWorld.size();
-        double mean_y = sum_y / drawnPointsWorld.size();
+        double mean_x = 1.0 * sum_x / drawnPointsWorld.size();
+        double mean_y = 1.0 * sum_y / drawnPointsWorld.size();
         
         float varx = sum_x2 - sum_x * mean_x;
         float cov = sum_xy - sum_x * mean_y;
@@ -400,10 +404,13 @@ void QGLView::lineRegressionWorldSpace(){
         
         slopeWorld = cov / varx;
         offsetWorld = mean_y - slopeWorld * mean_x;
-   
-        //thanks, http://www.statisticshowto.com/articles/how-to-find-a-linear-regression-equation/
-        slopeWorld = (drawnPointsWorld.size()*sum_xy - sum_x*sum_y)/(drawnPointsWorld.size()*sum_x2 - sum_x*sum_x);
-        offsetWorld = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPointsWorld.size()*sum_x2 - sum_x*sum_x);        
+	
+				if(slopeWorld == 0) {
+					// in this case, we need to use an alternate formulation of the linear regression
+					//thanks, http://www.statisticshowto.com/articles/how-to-find-a-linear-regression-equation/
+					slopeWorld = (drawnPointsWorld.size()*sum_xy - sum_x*sum_y)/(drawnPointsWorld.size()*sum_x2 - sum_x*sum_x);
+					offsetWorld = (sum_y*sum_x2 - sum_x*sum_xy)/(drawnPointsWorld.size()*sum_x2 - sum_x*sum_x);  
+				}
 }
 
 double QGLView::distanceToLine(){
