@@ -1540,7 +1540,9 @@ void MainWindow::addCubeAction(){
     qglview->lineRegressionWorldSpace();
     
     setCurrentOutput();
-    PRINTB("y dist %f",(qglview->distanceToLine()));
+	PRINTB("y dist %f",(qglview->distanceToLine()));
+	PRINTB("slopeworld %f",(qglview->slopeWorld));
+	PRINTB("offsetworld %f",(qglview->offsetWorld));
     clearCurrentOutput();
     
     transMatrix(0,3)=  -500;//0 - qglview->cam.viewer_distance/20;
@@ -2473,16 +2475,12 @@ void MainWindow::cuttingPlaneAction()
     }
     QPoint point2 = this->qglview->GetOGLPos(this->qglview->drawnPoints[maxPoints-1].x(),this->qglview->drawnPoints[maxPoints-1].y());
     
-    //PRINTB("x loc world %d", point2.x());
-    //PRINTB("y loc world %d", point2.y());
+    PRINTB("x loc world %d", point2.x());
+    PRINTB("y loc world %d", point2.y());
     
     clearCurrentOutput();
     
     addCubeAction();
-    
-    
-    
-    
 }
 
 void MainWindow::insertionDirectionAction(){
