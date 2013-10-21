@@ -363,6 +363,7 @@ MainWindow::MainWindow(const QString &filename)
     connect(this->horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(setSliderVal(int)));
     connect(this->addCube, SIGNAL(released()), this, SLOT(openModelFileAction()));
     connect(this->seanRenderCGAL, SIGNAL(released()), this, SLOT(seanRenderCGALAction()));
+		connect(this->demoButton, SIGNAL(released()), this, SLOT(demoButtonAction()));
     connect(this->targetButton, SIGNAL(released()), this, SLOT(targetButtonOpenAction()));
     connect(this->enclosureButton, SIGNAL(released()), this, SLOT(enclosureButtonAction()));
     connect(this->alignButton, SIGNAL(released()), this, SLOT(alignButtonAction()));
@@ -2495,6 +2496,21 @@ void MainWindow::insertionDirectionAction(){
     clearCurrentOutput();
 }
 
+void MainWindow::demoButtonAction() {
+	targetFileName = "../sampleModels/target.stl";
+	const std::string tFile = targetFileName.toStdString();
+	
+	enclosureFileName = "../sampleModels/enclosureSmall.stl";
+	const std::string eFile = enclosureFileName.toStdString();
+	
+	setCurrentOutput();
+	PRINT(tFile);
+	PRINT(eFile);
+	clearCurrentOutput();
+	
+	loadOriginalFiles();
+}
+
 void MainWindow::targetButtonOpenAction(){
     targetFileName = QFileDialog::getOpenFileName(this, tr("Open File"),"",tr("Files (*.*)"));
     const std::string file = targetFileName.toStdString();
@@ -2758,6 +2774,8 @@ void MainWindow::loadOriginalFiles()
     
     const std::string tmp = parseCommand.str();
     const char* cstr = tmp.c_str();
+	
+	PRINT(tmp);
     
 	this->root_module = parse(cstr,"",false);
     instantiateRoot();
