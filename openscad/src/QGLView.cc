@@ -222,8 +222,7 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
        ) {
 
       if ((QApplication::keyboardModifiers() & Qt::AltModifier) != 0) {
-        drawnPoints.push_back(this_mouse);
-
+        drawnPoints.push_back(QPoint(event->pos().x(),event->pos().y()));
       }
       else if ((QApplication::keyboardModifiers() & Qt::ControlModifier) !=0){
         drawnInsertionPoints.push_back(this_mouse);
