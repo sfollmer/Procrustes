@@ -5,3 +5,4 @@ openscad/OpenSCAD.app/Contents/MacOS/OpenSCAD
 openscad/triangles.obj
 openscad/rotate.mlx
 openscad/rotatedMesh.binvox
+openscad/procrustes/
